@@ -1,6 +1,13 @@
-# Clockwise from Up, then all 8 directions (cardinals + diagonals)
+
 MOVE_ORDER = [
-    (-1, 0), (0, 1), (1, 0), (1, 1), (0, -1), (-1, -1), (-1, 1), (1, -1),
+    (-1, 0),   # Up
+    (0, 1),    # Right
+    (1, 0),    # Bottom
+    (1, 1),    # Bottom-Right
+    (0, -1),   # Left
+    (-1, -1),  # Top-Left
+    (-1, 1),   # Top-Right
+    (1, -1),   # Bottom-Left
 ]
 
 

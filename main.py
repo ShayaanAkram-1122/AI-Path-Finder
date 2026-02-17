@@ -5,11 +5,13 @@ import sys
 from grid import get_neighbors
 from search_algorithms import bfs, dfs, ucs, dls, iddfs, bidirectional_unified
 
-WINDOW_TITLE = "GOOD  PERFORMANCE  TIME APP"
+WINDOW_TITLE = "Search Algorithms Assignment (23F-0692 & 23F-0710)"
 
 GRID_ROWS = 20
 GRID_COLS = 25
 CELL_PX = 28
+LEGEND_WIDTH = 200
+BOTTOM_BAR = 72
 
 COLOR_BG = (32, 32, 40)
 COLOR_GRID_LINE = (60, 60, 70)
@@ -22,6 +24,8 @@ COLOR_EXPLORED = (90, 90, 110)
 COLOR_PATH = (255, 220, 100)
 COLOR_AGENT = (255, 255, 200)
 COLOR_TEXT = (240, 240, 245)
+COLOR_PANEL_BG = (55, 55, 65)
+COLOR_LEGEND_TEXT = (220, 220, 230)
 
 STEP_DELAY_MS = 45
 AGENT_MOVE_DELAY_MS = 120
@@ -103,6 +107,17 @@ class GameState:
             return self.start
         return self.agent_path[self.agent_index]
 
+    def reset(self):
+        self.start, self.goal, self.walls = make_default_grid(self.rows, self.cols)
+        self.dynamic_walls = set()
+        self.search_gen = None
+        self.current_frontier = set()
+        self.current_explored = set()
+        self.current_path = None
+        self.agent_path = None
+        self.agent_index = 0
+        self.phase = "idle"
+
 
 def draw_cell(screen, font, r, c, state, cell_px, show_labels=False):
     x = c * cell_px
@@ -135,6 +150,26 @@ def draw_cell(screen, font, r, c, state, cell_px, show_labels=False):
     else:
         pygame.draw.rect(screen, COLOR_BG, rect)
     pygame.draw.rect(screen, COLOR_GRID_LINE, rect, 1)
+
+
+def draw_legend(screen, font, x, y):
+    legend_font = pygame.font.Font(None, 22)
+    screen.blit(legend_font.render("info:", True, COLOR_LEGEND_TEXT), (x, y))
+    y += 24
+    items = [
+        ("start", COLOR_START),
+        ("end", COLOR_GOAL),
+        ("wall", COLOR_WALL),
+        ("front", COLOR_FRONTIER),
+        ("explored", COLOR_EXPLORED),
+        ("path found", COLOR_PATH),
+    ]
+    for label, color in items:
+        box = pygame.Rect(x, y, 16, 16)
+        pygame.draw.rect(screen, color, box)
+        pygame.draw.rect(screen, COLOR_GRID_LINE, box, 1)
+        screen.blit(legend_font.render(label, True, COLOR_LEGEND_TEXT), (x + 22, y - 2))
+        y += 22
 
 
 def run_search_step(state):
@@ -190,8 +225,10 @@ def start_algorithm(state):
 
 def main():
     pygame.init()
-    width = GRID_COLS * CELL_PX
-    height = GRID_ROWS * CELL_PX + 36
+    grid_w = GRID_COLS * CELL_PX
+    grid_h = GRID_ROWS * CELL_PX
+    width = grid_w + LEGEND_WIDTH
+    height = grid_h + BOTTOM_BAR
     screen = pygame.display.set_mode((width, height))
     pygame.display.set_caption(WINDOW_TITLE)
     font = pygame.font.Font(None, 24)
@@ -216,6 +253,12 @@ def main():
                     elif state.phase == "searching":
                         state.phase = "idle"
                         state.search_gen = None
+                if event.key == pygame.K_r:
+                    state.reset()
+                if event.key == pygame.K_LEFT:
+                    state.algorithm_index = (state.algorithm_index - 1) % len(ALGORITHMS)
+                elif event.key == pygame.K_RIGHT:
+                    state.algorithm_index = (state.algorithm_index + 1) % len(ALGORITHMS)
                 if state.phase == "idle":
                     if event.key == pygame.K_1:
                         state.algorithm_index = 0
@@ -264,15 +307,23 @@ def main():
         for r in range(state.rows):
             for c in range(state.cols):
                 draw_cell(screen, font, r, c, state, CELL_PX, show_labels=True)
-        parts = []
-        for i in range(len(ALGORITHMS)):
-            if i == state.algorithm_index:
-                parts.append("[%d] %s" % (i + 1, ALGORITHMS[i]))
-            else:
-                parts.append("%d %s" % (i + 1, ALGORITHMS[i]))
-        menu = "  ".join(parts)
-        screen.blit(font.render("Algo: " + menu, True, COLOR_TEXT), (8, GRID_ROWS * CELL_PX + 8))
-        screen.blit(font.render("SPACE: Run / Pause   Keys 1-6: Select algorithm", True, COLOR_TEXT), (8, GRID_ROWS * CELL_PX + 24))
+
+        legend_x = grid_w + 12
+        pygame.draw.rect(screen, COLOR_PANEL_BG, (grid_w, 0, LEGEND_WIDTH, grid_h))
+        draw_legend(screen, font, legend_x, 12)
+
+        bottom_y = grid_h
+        pygame.draw.rect(screen, COLOR_PANEL_BG, (0, bottom_y, width, BOTTOM_BAR))
+        current_algo = ALGORITHMS[state.algorithm_index]
+        screen.blit(font.render("Current algo: " + current_algo, True, COLOR_LEGEND_TEXT), (12, bottom_y + 10))
+        path_len = None
+        if state.current_path:
+            path_len = len(state.current_path) - 1
+        if state.agent_path and path_len is None:
+            path_len = len(state.agent_path) - 1
+        if path_len is not None:
+            screen.blit(font.render("Path length = %d" % path_len, True, COLOR_PATH), (12, bottom_y + 34))
+        screen.blit(font.render("Keys: 1-6 Algo | SPACE Go/Pause | R Reset | ESC Quit", True, COLOR_LEGEND_TEXT), (12, bottom_y + 54))
         pygame.display.flip()
         clock.tick(60)
 
