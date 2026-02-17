@@ -264,10 +264,13 @@ def main():
         for r in range(state.rows):
             for c in range(state.cols):
                 draw_cell(screen, font, r, c, state, CELL_PX, show_labels=True)
-        menu = "  ".join(
-            ("[%d] %s" % (i + 1, ALGORITHMS[i]) if i == state.algorithm_index else "%d %s" % (i + 1, ALGORITHMS[i])
-            for i in range(len(ALGORITHMS))
-        )
+        parts = []
+        for i in range(len(ALGORITHMS)):
+            if i == state.algorithm_index:
+                parts.append("[%d] %s" % (i + 1, ALGORITHMS[i]))
+            else:
+                parts.append("%d %s" % (i + 1, ALGORITHMS[i]))
+        menu = "  ".join(parts)
         screen.blit(font.render("Algo: " + menu, True, COLOR_TEXT), (8, GRID_ROWS * CELL_PX + 8))
         screen.blit(font.render("SPACE: Run / Pause   Keys 1-6: Select algorithm", True, COLOR_TEXT), (8, GRID_ROWS * CELL_PX + 24))
         pygame.display.flip()
